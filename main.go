@@ -23,6 +23,7 @@ func main() {
 		admin.POST("/delete", Auth(), AdminDeleteUser)
 		admin.POST("/update", Auth(), AdminUpdateUser)
 		admin.POST("/search", Auth(), AdminSearchUser)
+		admin.POST("/get", Auth(), AdminGetSomeUser)
 	}
 
 	err = router.Run()
@@ -180,6 +181,11 @@ func AdminUpdateUser(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"code": http.StatusBadRequest, "data": map[string]string{"msg": "user not exist"}})
 		return
 	}
+	nowUser = SearchUser(USER{UserName: u.Name, Role: -2})
+	if len(nowUser) != 0 {
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusBadRequest, "data": map[string]string{"msg": "user name already exist"}})
+		return
+	}
 	user := USER{Id: u.Id, UserName: u.Name, Password: u.Password, Email: u.Email, Role: u.Role}
 	err = ModifyUserById(user)
 	if err == nil {
@@ -187,4 +193,30 @@ func AdminUpdateUser(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, gin.H{"code": http.StatusInternalServerError, "data": map[string]string{"msg": err.Error()}})
 	}
+}
+
+func AdminGetSomeUser(c *gin.Context) {
+	type UserGetSome struct {
+		FromId int `json:"from_id"`
+		Sum    int `json:"sum"`
+	}
+	u := UserGetSome{}
+	err := c.BindJSON(&u)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"code": http.StatusInternalServerError, "data": map[string]string{"msg": "get json info error:" + err.Error()}})
+		return
+	}
+	users := GetSomeUsers(u.FromId, u.Sum)
+	type User struct {
+		Id       int    `json:"id"`
+		Name     string `json:"name"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
+		Role     int    `json:"role"`
+	}
+	var data []User
+	for _, v := range users {
+		data = append(data, User{Id: v.Id, Name: v.UserName, Password: v.Password, Email: v.Email, Role: v.Role})
+	}
+	c.JSON(http.StatusOK, gin.H{"code": http.StatusOK, "data": data})
 }
