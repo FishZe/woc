@@ -8,11 +8,11 @@ import (
 var DB *gorm.DB
 
 type USER struct {
-	Id       int
-	UserName string
-	Password string
-	Email    string
-	Role     int
+	Id       int    `json:"id"`
+	UserName string `json:"name"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
+	Role     int    `json:"role"`
 }
 
 // InitDB init database
@@ -40,7 +40,7 @@ func InsertUser(user USER) error {
 
 // DeleteUser delete a user
 func DeleteUser(user USER) error {
-	err := DB.Delete(user).Error
+	err := DB.Where("id = ?", user.Id).Delete(user).Error
 	if err != nil {
 		return err
 	}

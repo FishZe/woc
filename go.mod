@@ -5,6 +5,8 @@ go 1.19
 require (
 	github.com/gin-contrib/sessions v0.0.5
 	github.com/gin-gonic/gin v1.8.2
+	github.com/sirupsen/logrus v1.9.0
+	github.com/t-tomalak/logrus-easy-formatter v0.0.0-20190827215021-c074f06c5816
 	gorm.io/driver/sqlite v1.4.4
 	gorm.io/gorm v1.24.3
 )
