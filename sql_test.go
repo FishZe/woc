@@ -32,9 +32,19 @@ func mkRandUser() USER {
 
 func MkRandUsers() {
 	rand.Seed(time.Now().UnixNano() + int64(rand.Intn(100)))
-	sum := rand.Intn(90) + 10
+	sum := rand.Intn(1000) + 1000
+	userName := make(map[string]struct{})
+	userEmail := make(map[string]struct{})
 	for i := 0; i < sum; i++ {
-		randUsers = append(randUsers, mkRandUser())
+		nowUser := mkRandUser()
+		if _, ok := userName[nowUser.UserName]; !ok {
+			if _, ok = userEmail[nowUser.Email]; !ok {
+				randUsers = append(randUsers, nowUser)
+				userName[nowUser.UserName] = struct{}{}
+				userEmail[nowUser.Email] = struct{}{}
+			}
+		}
+
 	}
 	log.Printf("MkRandUsers success, sum: %d", sum)
 }
@@ -99,7 +109,45 @@ func TestGetSomeUsers(t *testing.T) {
 }
 
 func TestSearchUser(t *testing.T) {
-	// TODO
+	if DB == nil {
+		TestInitDB(t)
+	}
+	// test Id
+	for i := 1; i < rand.Intn(len(randUsers))+1; i++ {
+		user := SearchUser(USER{Id: i, Role: -2})
+		if len(user) != 1 {
+			t.Fatal("SearchUser error: ", randUsers[i-1])
+		}
+	}
+	// test name
+	for i := 0; i < rand.Intn(len(randUsers))+1; i++ {
+		name := randUsers[rand.Intn(len(randUsers))].UserName
+		users := SearchUser(USER{UserName: name, Role: -2})
+		if len(users) != 1 {
+			t.Fatal("SearchUser error: ", name)
+		}
+	}
+	// test email
+	for i := 0; i < rand.Intn(len(randUsers))+1; i++ {
+		email := randUsers[rand.Intn(len(randUsers))].Email
+		users := SearchUser(USER{Email: email, Role: -2})
+		if len(users) != 1 {
+			t.Fatal("SearchUser error: ", email)
+		}
+	}
+	// test role
+	for i := -1; i < 2; i++ {
+		userSum := 0
+		for _, user := range randUsers {
+			if user.Role == i {
+				userSum++
+			}
+		}
+		users := SearchUser(USER{Role: i})
+		if len(users) != userSum {
+			t.Fatal("SearchUser error: ", i)
+		}
+	}
 }
 
 func TestLoginUser(t *testing.T) {
