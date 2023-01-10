@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	log "github.com/sirupsen/logrus"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
 	"math/rand"
@@ -10,8 +12,14 @@ import (
 
 var randUsers []USER
 
+func md55(str string) string {
+	h := md5.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
+}
+
 func randStr(length int) string {
-	bytes := []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!#$%^&*()_+{},./;'[]<>?:")
+	bytes := []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
 	var result []byte
 	rand.Seed(time.Now().UnixNano() + int64(rand.Intn(100)))
 	for i := 0; i < length; i++ {
@@ -24,7 +32,7 @@ func mkRandUser() USER {
 	rand.Seed(time.Now().UnixNano() + int64(rand.Intn(100)))
 	return USER{
 		UserName: randStr(rand.Intn(10) + 1),
-		Password: randStr(rand.Intn(10) + 1),
+		Password: md55(randStr(rand.Intn(10) + 1)),
 		Email:    randStr(rand.Intn(10)+1) + "@" + randStr(rand.Intn(5)+1) + "." + randStr(rand.Intn(5)+1),
 		Role:     rand.Intn(3) - 1,
 	}
@@ -100,7 +108,7 @@ func TestGetSomeUsers(t *testing.T) {
 		for sum == 0 {
 			sum = rand.Intn(len(randUsers) - from)
 		}
-		users := GetSomeUsers(from, sum)
+		users, _ := GetSomeUsers(from, sum)
 		if len(users) != sum {
 			t.Fatal("GetSomeUsers error")
 		}

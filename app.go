@@ -31,6 +31,8 @@ func Run() error {
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("SESSION", store))
 	router.POST("/login", Login)
+	router.POST("/logout", Logout)
+	router.POST("/me", UserInfo)
 	// Admin
 	admin := router.Group("/admin")
 	{
@@ -65,6 +67,36 @@ func Auth() gin.HandlerFunc {
 	}
 }
 
+func UserInfo(c *gin.Context) {
+	session := sessions.Default(c)
+	if session.Get("USER_ID") == nil {
+		returnMsg(c, http.StatusUnauthorized, UserNotLoginMsg, nil)
+	} else {
+		nowUser := SearchUser(USER{Id: session.Get("USER_ID").(int), Role: -2})
+		if len(nowUser) == 0 {
+			returnMsg(c, http.StatusUnauthorized, UserNotExistMsg, nil)
+		} else {
+			returnMsg(c, http.StatusOK, NoMsg, nowUser[0])
+		}
+	}
+}
+
+func Logout(c *gin.Context) {
+	session := sessions.Default(c)
+	if session.Get("USER_ID") == nil {
+		returnMsg(c, http.StatusUnauthorized, UserNotLoginMsg, nil)
+	} else {
+		session.Delete("USER_ID")
+		session.Delete("USER_ROLE")
+		err := session.Save()
+		if err != nil {
+			returnMsg(c, http.StatusInternalServerError, SessionErrorMsg, nil)
+		} else {
+			returnMsg(c, http.StatusOK, NoMsg, nil)
+		}
+	}
+}
+
 // Login is a function for user login
 func Login(c *gin.Context) {
 	u := USER{}
@@ -75,6 +107,10 @@ func Login(c *gin.Context) {
 	}
 	if LoginUser(u) {
 		nowUser := SearchUser(USER{UserName: u.UserName, Role: -2})
+		if nowUser[0].Role != 1 {
+			returnMsg(c, http.StatusUnauthorized, UserNotAdminMsg, nil)
+			return
+		}
 		session := sessions.Default(c)
 		session.Set("USER_ID", nowUser[0].Id)
 		session.Set("USER_ROLE", nowUser[0].Role)
@@ -163,7 +199,7 @@ func AdminUpdateUser(c *gin.Context) {
 		return
 	}
 	nowUser = SearchUser(USER{UserName: u.UserName, Role: -2})
-	if len(nowUser) != 0 {
+	if len(nowUser) != 0 && nowUser[0].Id != u.Id {
 		returnMsg(c, http.StatusBadRequest, UserNameExistMsg, nil)
 		return
 	}
@@ -179,19 +215,27 @@ func AdminUpdateUser(c *gin.Context) {
 // AdminGetSomeUser is a function for admin get all user
 func AdminGetSomeUser(c *gin.Context) {
 	type UserGetSome struct {
-		FromId int `json:"from_id" binding:"required"`
+		FromId int `json:"from"`
 		Sum    int `json:"sum" binding:"required"`
 	}
 	u := UserGetSome{}
 	err := c.BindJSON(&u)
-	if err != nil || u.FromId <= 0 || u.Sum <= 0 {
+	if err != nil || u.FromId < 0 || u.Sum <= 0 {
 		returnMsg(c, http.StatusBadRequest, BadRequestMsg, nil)
 	} else {
-		users := GetSomeUsers(u.FromId, u.Sum)
+		users, allSum := GetSomeUsers(u.FromId, u.Sum)
 		var data []USER
 		for _, v := range users {
 			data = append(data, v)
 		}
-		returnMsg(c, http.StatusOK, "", data)
+		res := make(map[string]interface{})
+		res["user"] = data
+		res["all"] = allSum
+		page := allSum / int64(u.Sum)
+		if allSum%int64(u.Sum) != 0 {
+			page++
+		}
+		res["page"] = page
+		returnMsg(c, http.StatusOK, "", res)
 	}
 }

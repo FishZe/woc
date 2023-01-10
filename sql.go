@@ -58,10 +58,12 @@ func LoginUser(user USER) bool {
 }
 
 // GetSomeUsers get some users
-func GetSomeUsers(start, sum int) []USER {
+func GetSomeUsers(start, sum int) ([]USER, int64) {
 	var users []USER
+	var all int64
 	DB.Limit(sum).Offset(start).Find(&users)
-	return users
+	DB.Model(&USER{}).Count(&all)
+	return users, all
 }
 
 // SearchUser search user
