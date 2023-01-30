@@ -160,6 +160,11 @@ func AdminDeleteUser(c *gin.Context) {
 		returnMsg(c, http.StatusBadRequest, UserNotExistMsg, nil)
 		return
 	} else {
+		session := sessions.Default(c)
+		if session.Get("USER_ID").(int) == u.Id {
+			returnMsg(c, http.StatusInternalServerError, "请勿花样作死", nil)
+			return
+		}
 		err = DeleteUser(USER{Id: u.Id})
 		if err != nil {
 			returnMsg(c, http.StatusInternalServerError, InternalServerErrorMsg, nil)
