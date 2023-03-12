@@ -25,7 +25,7 @@ func Run() error {
 		return err
 	}
 	// Route
-	gin.SetMode(gin.ReleaseMode)
+	//	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	// Session
 	store := cookie.NewStore([]byte("secret"))

@@ -57,10 +57,10 @@ func Login(c *gin.Context) {
 		if err != nil {
 			returnMsg(c, false, http.StatusInternalServerError, SessionErrorMsg, nil)
 		} else {
-			returnMsg(c, false, http.StatusOK, NoMsg, nil)
+			returnMsg(c, true, http.StatusOK, NoMsg, nil)
 		}
 	} else {
-		returnMsg(c, true, http.StatusUnauthorized, UserNotExistMsg, nil)
+		returnMsg(c, false, http.StatusUnauthorized, UserNotExistMsg, nil)
 	}
 }
 
